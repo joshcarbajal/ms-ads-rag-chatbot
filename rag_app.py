@@ -53,33 +53,36 @@ def load_chain():
     return RetrievalQA.from_chain_type(
         llm=llm,
         retriever=retriever,
-        return_source_documents=False  # ⛔ Hide context documents
+        return_source_documents=False
     )
 
 # Initialize session history
 if "qa_history" not in st.session_state:
     st.session_state.qa_history = []
+if "user_query" not in st.session_state:
+    st.session_state.user_query = ""
 
 # UI Layout
 st.set_page_config(page_title="UChicago MS-ADS RAG Chatbot", layout="wide")
 st.title("🎓 MS in Applied Data Science Q&A Chatbot")
 st.markdown("Ask any question about the program, curriculum, admissions, or outcomes.")
 
-# User input with state control
-st.text_input("Enter your question:", key="user_query")
+# User input with key
+query = st.text_input("Enter your question:", key="user_query")
 
-if st.session_state.user_query:
+# Answer generation
+if query:
     with st.spinner("Generating answer..."):
         qa_chain = load_chain()
-        result = qa_chain.run(st.session_state.user_query)
+        result = qa_chain.run(query)
 
         # Save to chat history
-        st.session_state.qa_history.append((st.session_state.user_query, result))
+        st.session_state.qa_history.append((query, result))
 
-        # Clear input box after response
+        # Clear the input by resetting session state
         st.session_state.user_query = ""
 
-# Display previous Q&A
+# Display previous Q&A (latest first, labels preserved)
 qa_history = st.session_state.qa_history
 labeled_history = [(f"Q{i+1}", f"A{i+1}", q, a) for i, (q, a) in enumerate(qa_history)]
 
@@ -88,4 +91,3 @@ if labeled_history:
     for q_label, a_label, q, a in reversed(labeled_history):
         st.markdown(f"**{q_label}:** {q}")
         st.markdown(f"**{a_label}:** {a}")
-
