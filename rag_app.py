@@ -43,36 +43,46 @@ def load_vector_store():
 def load_chain():
     vectorstore = load_vector_store()
     retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={"k": 3})
+
     llm = ChatOpenAI(
         temperature=0.2,
         model_name="gpt-3.5-turbo",
         openai_api_key=openai_api_key
     )
+
     return RetrievalQA.from_chain_type(
         llm=llm,
         retriever=retriever,
         return_source_documents=False
     )
 
-# Initialize session state
+# Initialize session history
 if "qa_history" not in st.session_state:
     st.session_state.qa_history = []
+if "user_query" not in st.session_state:
+    st.session_state.user_query = ""
 
-# Set up input field with key
+# UI Layout
+st.set_page_config(page_title="UChicago MS-ADS RAG Chatbot", layout="wide")
+st.title("🎓 MS in Applied Data Science Q&A Chatbot")
+st.markdown("Ask any question about the program, curriculum, admissions, or outcomes.")
+
+# User input with key
 query = st.text_input("Enter your question:", key="user_query")
 
-# Handle new query
+# Answer generation
 if query:
     with st.spinner("Generating answer..."):
         qa_chain = load_chain()
         result = qa_chain.run(query)
+
+        # Save to chat history
         st.session_state.qa_history.append((query, result))
 
-    # Schedule clearing the input and rerun
-    st.session_state.user_query = ""
-    st.rerun()
+        # Clear the input by resetting session state
+        st.session_state.user_query = ""
 
-# Display previous Q&A in reverse (latest on top)
+# Display previous Q&A (latest first, labels preserved)
 qa_history = st.session_state.qa_history
 labeled_history = [(f"Q{i+1}", f"A{i+1}", q, a) for i, (q, a) in enumerate(qa_history)]
 
