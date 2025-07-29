@@ -65,17 +65,19 @@ st.set_page_config(page_title="UChicago MS-ADS RAG Chatbot", layout="wide")
 st.title("🎓 MS in Applied Data Science Q&A Chatbot")
 st.markdown("Ask any question about the program, curriculum, admissions, or outcomes.")
 
-# User input
-query = st.text_input("Enter your question:")
+# User input with state control
+st.text_input("Enter your question:", key="user_query")
 
-# Answer generation
-if query:
+if st.session_state.user_query:
     with st.spinner("Generating answer..."):
         qa_chain = load_chain()
-        result = qa_chain.run(query)
+        result = qa_chain.run(st.session_state.user_query)
 
-        # Save Q&A to session state
-        st.session_state.qa_history.append((query, result))
+        # Save to chat history
+        st.session_state.qa_history.append((st.session_state.user_query, result))
+
+        # Clear input box after response
+        st.session_state.user_query = ""
 
 # Display previous Q&A
 qa_history = st.session_state.qa_history
