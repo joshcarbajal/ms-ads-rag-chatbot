@@ -8,7 +8,7 @@ from langchain.chat_models import ChatOpenAI
 from langchain.schema import Document
 from langchain.text_splitter import CharacterTextSplitter
 
-# Load API key from Streamlit secrets
+# Load API key
 openai_api_key = st.secrets["OPENAI_API_KEY"]
 
 # Load vector store
@@ -54,30 +54,33 @@ def load_chain():
         return_source_documents=False
     )
 
-# Initialize session history
+# Init session state
 if "qa_history" not in st.session_state:
     st.session_state.qa_history = []
+if "clear_input" not in st.session_state:
+    st.session_state.clear_input = False
 
-# UI Layout
+# Layout
 st.set_page_config(page_title="UChicago MS-ADS RAG Chatbot", layout="wide")
 st.title("🎓 MS in Applied Data Science Q&A Chatbot")
 st.markdown("Ask any question about the program, curriculum, admissions, or outcomes.")
 
-# Input field
+# Input
+if st.session_state.clear_input:
+    st.session_state.clear_input = False
+    st.experimental_rerun()
+
 query = st.text_input("Enter your question:", key="user_query")
 
-# Handle input
+# Run chain
 if query:
     with st.spinner("Generating answer..."):
         qa_chain = load_chain()
         result = qa_chain.run(query)
         st.session_state.qa_history.append((query, result))
+        st.session_state.clear_input = True  # triggers rerun and clears input
 
-    # Clear input and rerun
-    st.session_state.user_query = ""
-    st.rerun()
-
-# Display chat history with preserved labels, latest on top
+# History
 qa_history = st.session_state.qa_history
 labeled_history = [(f"Q{i+1}", f"A{i+1}", q, a) for i, (q, a) in enumerate(qa_history)]
 
