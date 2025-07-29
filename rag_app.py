@@ -80,6 +80,7 @@ if query:
 # Display previous Q&A
 if st.session_state.qa_history:
     st.subheader("💬 Chat History")
-    for i, (q, a) in enumerate(reversed(st.session_state.qa_history), 1):
+    for i, (q, a) in enumerate(st.session_state.qa_history, 1):
         st.markdown(f"**Q{i}: {q}**")
         st.markdown(f"**A{i}:** {a}")
+
