@@ -1,5 +1,6 @@
 import streamlit as st
 import os
+import openai
 import json
 from dotenv import load_dotenv
 from langchain.vectorstores import FAISS
@@ -45,7 +46,15 @@ def load_vector_store():
 def load_chain():
     vectorstore = load_vector_store()
     retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={"k": 3})
-    llm = ChatOpenAI(temperature=0.2, model="gpt-3.5-turbo", openai_api_key=openai_api_key)
+
+    # Set API key globally for OpenAI SDK
+    openai.api_key = os.getenv("OPENAI_API_KEY")
+
+    llm = ChatOpenAI(
+        temperature=0.2,
+        model_name="gpt-3.5-turbo",  # Correct key
+    )
+
     return RetrievalQA.from_chain_type(
         llm=llm,
         retriever=retriever,
