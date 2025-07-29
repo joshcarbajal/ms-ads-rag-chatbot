@@ -78,9 +78,12 @@ if query:
         st.session_state.qa_history.append((query, result))
 
 # Display previous Q&A
-if st.session_state.qa_history:
+qa_history = st.session_state.qa_history
+labeled_history = [(f"Q{i+1}", f"A{i+1}", q, a) for i, (q, a) in enumerate(qa_history)]
+
+if labeled_history:
     st.subheader("💬 Chat History")
-    for i, (q, a) in enumerate(st.session_state.qa_history, 1):
-        st.markdown(f"**Q{i}: {q}**")
-        st.markdown(f"**A{i}:** {a}")
+    for q_label, a_label, q, a in reversed(labeled_history):
+        st.markdown(f"**{q_label}:** {q}")
+        st.markdown(f"**{a_label}:** {a}")
 
