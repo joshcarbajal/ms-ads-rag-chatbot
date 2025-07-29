@@ -1,8 +1,6 @@
 import streamlit as st
-import os
-import openai
 import json
-from dotenv import load_dotenv
+import os
 from langchain.vectorstores import FAISS
 from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.chains import RetrievalQA
@@ -10,9 +8,8 @@ from langchain.chat_models import ChatOpenAI
 from langchain.schema import Document
 from langchain.text_splitter import CharacterTextSplitter
 
-# Load API keys
-load_dotenv()
-openai_api_key = os.getenv("OPENAI_API_KEY")
+# Load API key from Streamlit secrets
+openai_api_key = st.secrets["OPENAI_API_KEY"]
 
 # Load vector store
 @st.cache_resource
@@ -47,19 +44,21 @@ def load_chain():
     vectorstore = load_vector_store()
     retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={"k": 3})
 
-    # Set API key globally for OpenAI SDK
-    openai.api_key = os.getenv("OPENAI_API_KEY")
-
     llm = ChatOpenAI(
         temperature=0.2,
-        model_name="gpt-3.5-turbo",  # Correct key
+        model_name="gpt-3.5-turbo",
+        openai_api_key=openai_api_key
     )
 
     return RetrievalQA.from_chain_type(
         llm=llm,
         retriever=retriever,
-        return_source_documents=True
+        return_source_documents=False  # ⛔ Hide context documents
     )
+
+# Initialize session history
+if "qa_history" not in st.session_state:
+    st.session_state.qa_history = []
 
 # UI Layout
 st.set_page_config(page_title="UChicago MS-ADS RAG Chatbot", layout="wide")
@@ -73,12 +72,14 @@ query = st.text_input("Enter your question:")
 if query:
     with st.spinner("Generating answer..."):
         qa_chain = load_chain()
-        result = qa_chain(query)
+        result = qa_chain.run(query)
 
-        st.subheader("📘 Retrieved Answer:")
-        st.write(result["result"])
+        # Save Q&A to session state
+        st.session_state.qa_history.append((query, result))
 
-        st.subheader("📂 Retrieved Documents (Context):")
-        for i, doc in enumerate(result["source_documents"]):
-            st.markdown(f"**Chunk {i+1}:**")
-            st.write(doc.page_content)
+# Display previous Q&A
+if st.session_state.qa_history:
+    st.subheader("💬 Chat History")
+    for i, (q, a) in enumerate(reversed(st.session_state.qa_history), 1):
+        st.markdown(f"**Q{i}: {q}**")
+        st.markdown(f"**A{i}:** {a}")
